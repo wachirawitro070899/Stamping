@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+  <style>
+    body { font-family: Arial; background:#f0f2f5; padding:20px; }
+    .card {
+      background:white;
+      padding:20px;
+      border-radius:15px;
+      max-width:500px;
+      margin:auto;
+      box-shadow:0 5px 15px rgba(0,0,0,0.1);
+    }
+    input, select {
+      width:100%; padding:10px; margin:8px 0;
+      border-radius:8px; border:1px solid #ccc;
+    }
+    button {
+      width:100%; padding:12px;
+      background:#28a745; color:white;
+      border:none; border-radius:10px;
+    }
+    #toast {
+      display:none;
+      position:fixed;
+      top:20px; right:20px;
+      background:#28a745; color:white;
+      padding:15px; border-radius:10px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="card">
+  <h2>🏭 Stamping Input</h2>
+
+  <input id="machine" placeholder="Machine No">
+  <input id="partNo" placeholder="Part No">
+  <input id="partName" placeholder="Part Name">
+
+  <select id="shift">
+    <option value="Day">Day</option>
+    <option value="Night">Night</option>
+  </select>
+
+  <input id="good" type="number" placeholder="Good Qty">
+  <input id="ng" type="number" placeholder="NG Qty">
+  <input id="hours" type="number" placeholder="Working Hours">
+  <input id="operator" placeholder="Operator">
+
+  <button onclick="save()">💾 Save</button>
+</div>
+
+<br>
+
+<div class="card">
+  <h3>📊 Chart</h3>
+  <canvas id="chart"></canvas>
+</div>
+
+<div id="toast">บันทึกสำเร็จ</div>
+
+<script>
+let chart;
+
+function save() {
+  const data = {
+    machine: machine.value,
+    partNo: partNo.value,
+    partName: partName.value,
+    shift: shift.value,
+    good: good.value,
+    ng: ng.value,
+    hours: hours.value,
+    operator: operator.value
+  };
+
+  google.script.run.withSuccessHandler(() => {
+    showToast();
+    resetForm();
+    loadChart();
+  }).saveData(data);
+}
+
+function loadChart() {
+  google.script.run.withSuccessHandler(drawChart).getChartData();
+}
+
+function drawChart(data) {
+  const ctx = document.getElementById("chart");
+
+  if (chart) chart.destroy();
+
+  chart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: data.labels,
+      datasets: [
+        {
+          label: "Good",
+          data: data.good,
+          backgroundColor: "#28a745"
+        },
+        {
+          label: "NG",
+          data: data.ng,
+          backgroundColor: "#dc3545"
+        }
+      ]
+    },
+    options: {
+      plugins: {
+        legend: { position: "top" },
+
+        // 🔥 ตัวเลขบนกราฟ
+        datalabels: {
+          color: "#000",
+          anchor: "end",
+          align: "top",
+          font: { weight: "bold" },
+          formatter: value => value.toLocaleString()
+        }
+      }
+    },
+    plugins: [ChartDataLabels]
+  });
+}
+
+function resetForm() {
+  machine.value = "";
+  partNo.value = "";
+  partName.value = "";
+  shift.value = "Day";
+  good.value = "";
+  ng.value = "";
+  hours.value = "";
+  operator.value = "";
+  machine.focus();
+}
+
+function showToast() {
+  const t = document.getElementById("toast");
+  t.style.display = "block";
+  setTimeout(() => t.style.display = "none", 2000);
+}
+
+window.onload = loadChart;
+</script>
+
+</body>
+</html>
